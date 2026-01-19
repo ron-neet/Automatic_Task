@@ -1,0 +1,51 @@
+import pytest
+from phone_utils import normalize_phone
+
+class TestNormalizePhone:
+    """Test suite for normalize_phone function."""
+
+    # -------------------------
+    # Valid Phone Numbers
+    # -------------------------
+    @pytest.mark.parametrize(
+        "input_phone, expected",
+        [
+            ("9812345678", "+9779812345678"),
+            ("09812345678", "+9779812345678"),
+            ("+9779812345678", "+9779812345678"),
+        ],
+    )
+    def test_valid_numbers(self, input_phone, expected):
+        """Valid phone numbers should return normalized +977 format."""
+        assert normalize_phone(input_phone) == expected
+
+    # -------------------------
+    # Invalid Phone Numbers
+    # -------------------------
+    @pytest.mark.parametrize(
+        "input_phone",
+        [
+            "9612345678",      # Invalid prefix
+            "9812345",         # Too short
+            "+97798123abc",    # Contains letters
+        ],
+    )
+    def test_invalid_numbers(self, input_phone):
+        """Invalid phone numbers should raise ValueError."""
+        with pytest.raises(ValueError):
+            normalize_phone(input_phone)
+
+    # -------------------------
+    # Edge Cases
+    # -------------------------
+    @pytest.mark.parametrize(
+        "input_phone, expected",
+        [
+            ("98 12-34 56 78", "+9779812345678"),   # Spaces & dashes
+            ("(098)123-45678", "+9779812345678"),  # Parentheses & symbols
+            ("+977-9812-345678", "+9779812345678"),# Mixed separators
+        ],
+    )
+    def test_edge_cases(self, input_phone, expected):
+        """Edge cases should also be normalized correctly."""
+        assert normalize_phone(input_phone) == expected
