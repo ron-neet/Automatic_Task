@@ -1,8 +1,18 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoAlertPresentException
 import time
 
-# Setup WebDriver
+def handle_alert_if_present(driver):
+    try:
+        alert = driver.switch_to.alert
+        alert_text = alert.text
+        alert.accept()
+        return alert_text
+    except NoAlertPresentException:
+        return None
+
+
 driver = webdriver.Chrome()
 driver.maximize_window()
 driver.get("https://chulo-solutions.github.io/qa-internship/")
@@ -123,35 +133,38 @@ test_data = [
     {"username": "user100", "password": "Pass@123", "creditCard": "4111111111111215", "telephone": "9998880104", "valid": False},
 ]
 
-
 for i, data in enumerate(test_data, start=1):
-    # Clear the form or refresh the page
+
     driver.refresh()
     time.sleep(1)
-    
+
     # Fill the form
     driver.find_element(By.ID, "username").send_keys(data["username"])
     driver.find_element(By.ID, "password").send_keys(data["password"])
     driver.find_element(By.ID, "creditCard").send_keys(data["creditCard"])
     driver.find_element(By.ID, "telephone").send_keys(data["telephone"])
-    
-    # Submit the form
+
+    # Submit
     driver.find_element(By.TAG_NAME, "button").click()
     time.sleep(1)
-    
-    # Check result
+
+    # Handle success alert if any
+    alert_text = handle_alert_if_present(driver)
+
+    # Check error messages
+    errors = driver.find_elements(By.CLASS_NAME, "error-message")
+
     if data["valid"]:
-        try:
-            success_msg = driver.find_element(By.ID, "successMessage").text
-            assert "successful" in success_msg.lower()
-            print(f"✅ Test {i}: Passed (valid data)")
-        except:
-            print(f"❌ Test {i}: Failed (valid data)")
+        if alert_text:
+            print(f"✅ Test {i}: Passed (valid data accepted)")
+        elif len(errors) > 0:
+            print(f"❌ Test {i}: Failed (valid data showed error)")
+        else:
+            print(f"❌ Test {i}: Failed (no success indication)")
     else:
-        try:
-            error_msg = driver.find_element(By.CLASS_NAME, "error-message").text
+        if len(errors) > 0:
             print(f"✅ Test {i}: Correctly caught invalid data")
-        except:
+        else:
             print(f"❌ Test {i}: Invalid data was accepted!")
 
 driver.quit()
